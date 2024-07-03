@@ -2,46 +2,47 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>WebAR Windmill</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Windmill</title>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         .ar-button {
             position: fixed;
             bottom: 10px;
             padding: 10px;
-            z-index: 1;
+            z-index: 1000;
+            background-color: white;
+            border: none;
+            border-radius: 5px;
         }
         #place-button { left: 10px; }
-        #move-closer { left: 120px; }
-        #move-away { left: 230px; }
-        #scale-up { right: 120px; }
-        #scale-down { right: 10px; }
+        #move-closer { left: 120px; display: none; }
+        #move-away { left: 230px; display: none; }
+        #scale-up { right: 120px; display: none; }
+        #scale-down { right: 10px; display: none; }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
             <a-asset-item id="windmill" src="path/to/windmill.glb"></a-asset-item>
             <video id="windmill-video" src="path/to/windmill-video.mp4" preload="auto"></video>
         </a-assets>
 
-        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.5 0.5 0.5">
-        </a-entity>
-
-        <a-entity id="video-plane" geometry="primitive: plane; width: 1.6; height: 0.9" material="shader: flat; src: #windmill-video" visible="false" position="0 1.5 -2"></a-entity>
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.5 0.5 0.5"></a-entity>
+        <a-entity id="video-plane" geometry="primitive: plane; width: 1.6; height: 0.9" material="shader: flat; src: #windmill-video" visible="false"></a-entity>
 
         <a-entity camera></a-entity>
     </a-scene>
 
     <button id="place-button" class="ar-button">Place Windmill</button>
-    <button id="move-closer" class="ar-button" style="display:none;">Move Closer</button>
-    <button id="move-away" class="ar-button" style="display:none;">Move Away</button>
-    <button id="scale-up" class="ar-button" style="display:none;">Scale Up</button>
-    <button id="scale-down" class="ar-button" style="display:none;">Scale Down</button>
+    <button id="move-closer" class="ar-button">Move Closer</button>
+    <button id="move-away" class="ar-button">Move Away</button>
+    <button id="scale-up" class="ar-button">Scale Up</button>
+    <button id="scale-down" class="ar-button">Scale Down</button>
 
     <script>
-        let isPlaced = false;
         const windmillModel = document.getElementById('windmill-model');
         const videoPlane = document.getElementById('video-plane');
         const placeButton = document.getElementById('place-button');
@@ -50,32 +51,21 @@
         const scaleUpButton = document.getElementById('scale-up');
         const scaleDownButton = document.getElementById('scale-down');
 
-        AFRAME.registerComponent('tap-place', {
+        let isPlaced = false;
+
+        AFRAME.registerComponent('tap-to-place', {
             init: function() {
                 this.raycaster = new THREE.Raycaster();
                 this.camera = document.querySelector('a-entity[camera]').object3D;
-                this.threeElement = this.el.sceneEl.renderer.domElement;
-                this.placedModel = false;
-
-                this.threeElement.addEventListener('click', this.onTouchEnd.bind(this));
+                this.el.sceneEl.addEventListener('click', this.onTap.bind(this));
             },
-            onTouchEnd: function(evt) {
-                if (this.placedModel) return;
+            onTap: function(event) {
+                if (isPlaced) return;
 
-                var mouse = new THREE.Vector2();
-                mouse.x = (evt.clientX / this.threeElement.clientWidth) * 2 - 1;
-                mouse.y = -(evt.clientY / this.threeElement.clientHeight) * 2 + 1;
-                this.raycaster.setFromCamera(mouse, this.camera);
-
-                var intersects = this.raycaster.intersectObjects(this.el.sceneEl.object3D.children, true);
-                if (intersects.length > 0) {
-                    var intersection = intersects[0];
-                    var worldPosition = new THREE.Vector3();
-                    worldPosition.setFromMatrixPosition(windmillModel.object3D.matrixWorld);
-                    worldPosition.y = intersection.point.y;
-                    windmillModel.setAttribute('position', worldPosition);
+                const touch = event.detail.intersection;
+                if (touch) {
+                    windmillModel.setAttribute('position', touch.point);
                     windmillModel.setAttribute('visible', true);
-                    this.placedModel = true;
                     isPlaced = true;
                     placeButton.style.display = 'none';
                     moveCloserButton.style.display = 'block';
@@ -88,26 +78,12 @@
 
         moveCloserButton.addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
-            const camera = document.querySelector('a-entity[camera]');
-            const direction = new THREE.Vector3();
-            camera.object3D.getWorldDirection(direction);
-            windmillModel.setAttribute('position', {
-                x: position.x + direction.x * 0.5,
-                y: position.y,
-                z: position.z + direction.z * 0.5
-            });
+            windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z + 0.1}`);
         });
 
         moveAwayButton.addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
-            const camera = document.querySelector('a-entity[camera]');
-            const direction = new THREE.Vector3();
-            camera.object3D.getWorldDirection(direction);
-            windmillModel.setAttribute('position', {
-                x: position.x - direction.x * 0.5,
-                y: position.y,
-                z: position.z - direction.z * 0.5
-            });
+            windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z - 0.1}`);
         });
 
         scaleUpButton.addEventListener('click', () => {
@@ -122,24 +98,14 @@
 
         windmillModel.addEventListener('click', () => {
             if (isPlaced) {
+                const modelPosition = windmillModel.getAttribute('position');
+                videoPlane.setAttribute('position', `${modelPosition.x} ${modelPosition.y + 1.5} ${modelPosition.z}`);
                 videoPlane.setAttribute('visible', true);
-                const videoEl = document.querySelector('#windmill-video');
-                videoEl.play();
+                document.querySelector('#windmill-video').play();
             }
         });
 
-        document.addEventListener('click', (event) => {
-            if (isPlaced && event.target.tagName !== 'BUTTON') {
-                const videoEl = document.querySelector('#windmill-video');
-                if (!videoPlane.getAttribute('visible')) {
-                    videoPlane.setAttribute('visible', false);
-                    videoEl.pause();
-                }
-            }
-        });
-
-        // Add tap-place component to the scene
-        document.querySelector('a-scene').setAttribute('tap-place', '');
+        document.querySelector('a-scene').setAttribute('tap-to-place', '');
     </script>
 </body>
 </html>
