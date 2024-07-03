@@ -1,17 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebAR Windmill</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="utf-8">
+    <title>WebAR Windmill</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
-<body>
-  <div id="ar-container"></div>
-  <div id="target-circle"></div>
-  <video id="windmill-video" src="video.mp4" controls></video>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.js"></script>
-  <script src="script.js"></script>
+<body style="margin: 0; overflow: hidden;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-assets>
+            <a-asset-item id="windmill" src="windmill.glb"></a-asset-item>
+            <video id="windmill-video" src="video.mp4" preload="auto"></video>
+        </a-assets>
+
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" animation-mixer>
+        </a-entity>
+
+        <a-entity id="video-plane" geometry="primitive: plane; width: 1.6; height: 0.9" material="shader: flat; src: #windmill-video" visible="false" position="0 1.5 -2"></a-entity>
+
+        <a-entity camera>
+            <a-entity cursor="fuse: false; fuseTimeout: 500" position="0 0 -1"
+                      geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                      material="color: white; shader: flat">
+            </a-entity>
+        </a-entity>
+    </a-scene>
+
+    <div style="position: fixed; bottom: 10px; left: 10px; width: 100%; text-align: center; z-index: 1;">
+        <button id="place-button">Place Windmill</button>
+    </div>
+
+    <script>
+        let isPlaced = false;
+        const windmillModel = document.getElementById('windmill-model');
+        const videoPlane = document.getElementById('video-plane');
+        const placeButton = document.getElementById('place-button');
+
+        placeButton.addEventListener('click', () => {
+            if (!isPlaced) {
+                windmillModel.setAttribute('visible', true);
+                windmillModel.setAttribute('position', '0 0 -5');
+                isPlaced = true;
+                placeButton.style.display = 'none';
+            }
+        });
+
+        const camera = document.querySelector('[camera]');
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        document.addEventListener('click', (event) => {
+            if (isPlaced) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera.object3D);
+                const intersects = raycaster.intersectObject(windmillModel.object3D, true);
+
+                if (intersects.length > 0) {
+                    videoPlane.setAttribute('visible', true);
+                    videoPlane.components.material.material.map.image.play();
+                } else {
+                    videoPlane.setAttribute('visible', false);
+                    videoPlane.components.material.material.map.image.pause();
+                }
+            }
+        });
+    </script>
 </body>
 </html>
