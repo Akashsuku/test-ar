@@ -63,7 +63,7 @@
             <video id="windmill-video" src="video.mp4" preload="auto"></video>
         </a-assets>
 
-        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.25 0.25 0.25" animation-mixer="loop: repeat"></a-entity>
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.128 0.128 0.128" position="0 0 -1.5" animation-mixer="loop: repeat"></a-entity>
         <a-entity id="video-plane" geometry="primitive: plane; width: 0.6; height: 0.3375" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]" position="0 -0.3 -1"></a-entity>
 
         <a-entity camera></a-entity>
@@ -85,12 +85,13 @@
         const videoPlane = document.getElementById('video-plane');
         const placeButton = document.getElementById('place-button');
         let isPlaced = false;
+        let videoPlaying = false;
 
         placeButton.addEventListener('click', function() {
             if (!isPlaced) {
                 const camera = document.querySelector('[camera]');
                 const position = camera.getAttribute('position');
-                windmillModel.setAttribute('position', `${position.x} 0 ${position.z - 1}`);
+                windmillModel.setAttribute('position', `${position.x} 0 ${position.z - 1.5}`);
                 windmillModel.setAttribute('visible', true);
                 isPlaced = true;
                 placeButton.style.display = 'none';
@@ -170,20 +171,28 @@
 
             const dotProduct = direction.x * forwardX + direction.y * forwardY + direction.z * forwardZ;
 
-            // Adjusted threshold to make it easier to trigger the video
-            if (dotProduct > 0.7) {
-                videoPlane.setAttribute('visible', true);
-                const videoEl = document.querySelector('#windmill-video');
-                videoEl.play();
-                // Position the video plane in front of the camera
-                const cameraEl = document.querySelector('[camera]');
-                const cameraPosition = cameraEl.getAttribute('position');
-                const cameraRotation = cameraEl.getAttribute('rotation');
-                videoPlane.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y - 0.2} ${cameraPosition.z - 2}`);
-                videoPlane.setAttribute('rotation', `${cameraRotation.x} ${cameraRotation.y} ${cameraRotation.z}`);
+            // Adjusted threshold to make the activation radius smaller
+            if (dotProduct > 0.9) {
+                if (!videoPlaying) {
+                    videoPlane.setAttribute('visible', true);
+                    const videoEl = document.querySelector('#windmill-video');
+                    videoEl.play();
+                    // Position the video plane in front of the camera
+                    const cameraEl = document.querySelector('[camera]');
+                    const cameraPosition = cameraEl.getAttribute('position');
+                    const cameraRotation = cameraEl.getAttribute('rotation');
+                    videoPlane.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y - 0.2} ${cameraPosition.z - 2}`);
+                    videoPlane.setAttribute('rotation', `${cameraRotation.x} ${cameraRotation.y} ${cameraRotation.z}`);
+                    videoPlaying = true;
+                }
             } else {
-                videoPlane.setAttribute('visible', false);
-                document.querySelector('#windmill-video').pause();
+                if (videoPlaying) {
+                    videoPlane.setAttribute('visible', false);
+                    const videoEl = document.querySelector('#windmill-video');
+                    videoEl.pause();
+                    videoEl.currentTime = 0; // Restart the video when it reappears
+                    videoPlaying = false;
+                }
             }
         }
 
