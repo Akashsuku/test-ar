@@ -24,6 +24,8 @@
         #move-backward { top: 210px; display: none; }
         #scale-up { top: 260px; display: none; }
         #scale-down { top: 310px; display: none; }
+        #rotate-left { top: 360px; display: none; }
+        #rotate-right { top: 410px; display: none; }
         #marker {
             position: fixed;
             top: 50%;
@@ -61,8 +63,8 @@
             <video id="windmill-video" src="video.mp4" preload="auto"></video>
         </a-assets>
 
-        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.5 0.5 0.5"></a-entity>
-        <a-entity id="video-plane" geometry="primitive: plane; width: 0.4; height: 0.225" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]"></a-entity>
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.25 0.25 0.25" animation-mixer></a-entity>
+        <a-entity id="video-plane" geometry="primitive: plane; width: 0.6; height: 0.3375" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]"></a-entity>
 
         <a-entity camera></a-entity>
     </a-scene>
@@ -75,6 +77,8 @@
     <button id="move-backward" class="ar-button">Backward</button>
     <button id="scale-up" class="ar-button">Scale Up</button>
     <button id="scale-down" class="ar-button">Scale Down</button>
+    <button id="rotate-left" class="ar-button">Rotate Left</button>
+    <button id="rotate-right" class="ar-button">Rotate Right</button>
 
     <script>
         const windmillModel = document.getElementById('windmill-model');
@@ -96,6 +100,8 @@
                 document.getElementById('move-backward').style.display = 'block';
                 document.getElementById('scale-up').style.display = 'block';
                 document.getElementById('scale-down').style.display = 'block';
+                document.getElementById('rotate-left').style.display = 'block';
+                document.getElementById('rotate-right').style.display = 'block';
             }
         });
 
@@ -127,6 +133,16 @@
         document.getElementById('scale-down').addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 0.8} ${scale.y * 0.8} ${scale.z * 0.8}`);
+        });
+
+        document.getElementById('rotate-left').addEventListener('click', () => {
+            const rotation = windmillModel.getAttribute('rotation') || {x: 0, y: 0, z: 0};
+            windmillModel.setAttribute('rotation', {x: rotation.x, y: rotation.y - 10, z: rotation.z});
+        });
+
+        document.getElementById('rotate-right').addEventListener('click', () => {
+            const rotation = windmillModel.getAttribute('rotation') || {x: 0, y: 0, z: 0};
+            windmillModel.setAttribute('rotation', {x: rotation.x, y: rotation.y + 10, z: rotation.z});
         });
 
         function checkMarkerIntersection() {
