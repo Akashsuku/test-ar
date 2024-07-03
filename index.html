@@ -17,16 +17,26 @@
         #move-away { left: 230px; }
         #scale-up { right: 120px; }
         #scale-down { right: 10px; }
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            z-index: 100;
+        }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
-            <a-asset-item id="windmill.glb"></a-asset-item>
+            <a-asset-item id="windmill" src="windmill.glb"></a-asset-item>
             <video id="windmill-video" src="video.mp4" preload="auto"></video>
         </a-assets>
 
-        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" animation-mixer>
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="true" position="0 0 -5" scale="1 1 1">
         </a-entity>
 
         <a-entity id="video-plane" geometry="primitive: plane; width: 1.6; height: 0.9" material="shader: flat; src: #windmill-video" visible="false" position="0 1.5 -2"></a-entity>
@@ -39,11 +49,13 @@
         </a-entity>
     </a-scene>
 
+    <div id="debug-info"></div>
+
     <button id="place-button" class="ar-button">Place Windmill</button>
-    <button id="move-closer" class="ar-button">Move Closer</button>
-    <button id="move-away" class="ar-button">Move Away</button>
-    <button id="scale-up" class="ar-button">Scale Up</button>
-    <button id="scale-down" class="ar-button">Scale Down</button>
+    <button id="move-closer" class="ar-button" style="display:none;">Move Closer</button>
+    <button id="move-away" class="ar-button" style="display:none;">Move Away</button>
+    <button id="scale-up" class="ar-button" style="display:none;">Scale Up</button>
+    <button id="scale-down" class="ar-button" style="display:none;">Scale Down</button>
 
     <script>
         let isPlaced = false;
@@ -54,6 +66,27 @@
         const moveAwayButton = document.getElementById('move-away');
         const scaleUpButton = document.getElementById('scale-up');
         const scaleDownButton = document.getElementById('scale-down');
+        const debugInfo = document.getElementById('debug-info');
+
+        function updateDebugInfo() {
+            const position = windmillModel.getAttribute('position');
+            const scale = windmillModel.getAttribute('scale');
+            const visible = windmillModel.getAttribute('visible');
+            debugInfo.innerHTML = `
+                Windmill Position: ${JSON.stringify(position)}<br>
+                Windmill Scale: ${JSON.stringify(scale)}<br>
+                Windmill Visible: ${visible}<br>
+                Is Placed: ${isPlaced}
+            `;
+        }
+
+        windmillModel.addEventListener('model-loaded', function(e) {
+            debugInfo.innerHTML += '<br>Model loaded successfully';
+        });
+
+        windmillModel.addEventListener('model-error', function(e) {
+            debugInfo.innerHTML += '<br>Error loading model: ' + e.detail.message;
+        });
 
         placeButton.addEventListener('click', () => {
             if (!isPlaced) {
@@ -66,27 +99,32 @@
                 moveAwayButton.style.display = 'block';
                 scaleUpButton.style.display = 'block';
                 scaleDownButton.style.display = 'block';
+                updateDebugInfo();
             }
         });
 
         moveCloserButton.addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z + 0.5}`);
+            updateDebugInfo();
         });
 
         moveAwayButton.addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z - 0.5}`);
+            updateDebugInfo();
         });
 
         scaleUpButton.addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 1.2} ${scale.y * 1.2} ${scale.z * 1.2}`);
+            updateDebugInfo();
         });
 
         scaleDownButton.addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 0.8} ${scale.y * 0.8} ${scale.z * 0.8}`);
+            updateDebugInfo();
         });
 
         windmillModel.addEventListener('click', () => {
@@ -106,6 +144,8 @@
                 }
             }
         });
+
+        updateDebugInfo();
     </script>
 </body>
 </html>
