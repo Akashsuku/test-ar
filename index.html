@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Windmill</title>
-    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.2/aframe/build/aframe-ar.js"></script>
     <style>
         .ar-button {
             position: fixed;
@@ -17,22 +17,19 @@
             border-radius: 5px;
         }
         #place-button { left: 10px; }
-        #move-closer { left: 120px; display: none; }
-        #move-away { left: 230px; display: none; }
+        #move-left { left: 120px; display: none; }
+        #move-right { left: 230px; display: none; }
+        #move-forward { left: 340px; display: none; }
+        #move-backward { left: 450px; display: none; }
         #scale-up { right: 120px; display: none; }
         #scale-down { right: 10px; display: none; }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
-    <a-scene
-        vr-mode-ui="enabled: false;"
-        renderer="logarithmicDepthBuffer: true;"
-        embedded
-        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
-    >
+    <a-scene embedded arjs="debugUIEnabled: false;" vr-mode-ui="enabled: false">
         <a-assets>
-            <a-asset-item id="windmill" src="windmill.glb"></a-asset-item>
-            <video id="windmill-video" src="video.mp4" preload="auto"></video>
+            <a-asset-item id="windmill" src="path/to/windmill.glb"></a-asset-item>
+            <video id="windmill-video" src="path/to/windmill-video.mp4" preload="auto"></video>
         </a-assets>
 
         <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.5 0.5 0.5"></a-entity>
@@ -42,65 +39,123 @@
     </a-scene>
 
     <button id="place-button" class="ar-button">Place Windmill</button>
-    <button id="move-closer" class="ar-button">Move Closer</button>
-    <button id="move-away" class="ar-button">Move Away</button>
+    <button id="move-left" class="ar-button">Left</button>
+    <button id="move-right" class="ar-button">Right</button>
+    <button id="move-forward" class="ar-button">Forward</button>
+    <button id="move-backward" class="ar-button">Backward</button>
     <button id="scale-up" class="ar-button">Scale Up</button>
     <button id="scale-down" class="ar-button">Scale Down</button>
 
     <script>
-        const windmillModel = document.getElementById('windmill-model');
-        const videoPlane = document.getElementById('video-plane');
-        const placeButton = document.getElementById('place-button');
-        const moveCloserButton = document.getElementById('move-closer');
-        const moveAwayButton = document.getElementById('move-away');
-        const scaleUpButton = document.getElementById('scale-up');
-        const scaleDownButton = document.getElementById('scale-down');
+        AFRAME.registerComponent('ar-hit-test', {
+            init: function () {
+                this.xrHitTestSource = null;
+                this.viewerSpace = null;
+                this.refSpace = null;
 
-        let isPlaced = false;
+                this.el.sceneEl.renderer.xr.addEventListener('sessionstart', (ev) => {
+                    this.session = this.el.sceneEl.renderer.xr.getSession();
+                    this.initHitTestSource();
+                });
+                this.el.sceneEl.renderer.xr.addEventListener('sessionend', (ev) => {
+                    this.xrHitTestSource = null;
+                });
 
-        placeButton.addEventListener('click', function() {
-            if (!isPlaced) {
-                const camera = document.querySelector('[camera]');
-                const position = camera.getAttribute('position');
-                windmillModel.setAttribute('position', `${position.x} 0 ${position.z - 1}`);
-                windmillModel.setAttribute('visible', true);
-                isPlaced = true;
-                placeButton.style.display = 'none';
-                moveCloserButton.style.display = 'block';
-                moveAwayButton.style.display = 'block';
-                scaleUpButton.style.display = 'block';
-                scaleDownButton.style.display = 'block';
+                this.el.addEventListener('click', this.onSelect.bind(this));
+            },
+
+            initHitTestSource: function () {
+                const self = this;
+                const session = this.session;
+
+                session.requestReferenceSpace('viewer').then((space) => {
+                    this.viewerSpace = space;
+                    session.requestHitTestSource({space: this.viewerSpace})
+                        .then((hitTestSource) => {
+                            this.xrHitTestSource = hitTestSource;
+                        });
+                });
+
+                session.requestReferenceSpace('local').then((space) => {
+                    this.refSpace = space;
+                });
+            },
+
+            onSelect: function () {
+                if (this.hitTestResult) {
+                    const windmillModel = document.getElementById('windmill-model');
+                    windmillModel.setAttribute('position', this.hitTestResult.position);
+                    windmillModel.setAttribute('visible', true);
+                    document.getElementById('place-button').style.display = 'none';
+                    document.getElementById('move-left').style.display = 'block';
+                    document.getElementById('move-right').style.display = 'block';
+                    document.getElementById('move-forward').style.display = 'block';
+                    document.getElementById('move-backward').style.display = 'block';
+                    document.getElementById('scale-up').style.display = 'block';
+                    document.getElementById('scale-down').style.display = 'block';
+                }
+            },
+
+            tick: function () {
+                if (this.xrHitTestSource && this.viewerSpace && this.refSpace) {
+                    const frame = this.el.sceneEl.frame;
+                    const xrViewerPose = frame.getViewerPose(this.refSpace);
+
+                    if (xrViewerPose) {
+                        const hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+                        if (hitTestResults.length > 0) {
+                            const hitTestPose = hitTestResults[0].getPose(this.refSpace);
+                            this.hitTestResult = {
+                                position: hitTestPose.transform.position,
+                                rotation: hitTestPose.transform.orientation
+                            };
+                        }
+                    }
+                }
             }
         });
 
-        moveCloserButton.addEventListener('click', () => {
+        const windmillModel = document.getElementById('windmill-model');
+        const videoPlane = document.getElementById('video-plane');
+
+        document.getElementById('move-left').addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
-            windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z + 0.1}`);
+            windmillModel.setAttribute('position', `${position.x - 0.1} ${position.y} ${position.z}`);
         });
 
-        moveAwayButton.addEventListener('click', () => {
+        document.getElementById('move-right').addEventListener('click', () => {
+            const position = windmillModel.getAttribute('position');
+            windmillModel.setAttribute('position', `${position.x + 0.1} ${position.y} ${position.z}`);
+        });
+
+        document.getElementById('move-forward').addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z - 0.1}`);
         });
 
-        scaleUpButton.addEventListener('click', () => {
+        document.getElementById('move-backward').addEventListener('click', () => {
+            const position = windmillModel.getAttribute('position');
+            windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z + 0.1}`);
+        });
+
+        document.getElementById('scale-up').addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 1.2} ${scale.y * 1.2} ${scale.z * 1.2}`);
         });
 
-        scaleDownButton.addEventListener('click', () => {
+        document.getElementById('scale-down').addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 0.8} ${scale.y * 0.8} ${scale.z * 0.8}`);
         });
 
         windmillModel.addEventListener('click', () => {
-            if (isPlaced) {
-                const modelPosition = windmillModel.getAttribute('position');
-                videoPlane.setAttribute('position', `${modelPosition.x} ${modelPosition.y + 1.5} ${modelPosition.z}`);
-                videoPlane.setAttribute('visible', true);
-                document.querySelector('#windmill-video').play();
-            }
+            const modelPosition = windmillModel.getAttribute('position');
+            videoPlane.setAttribute('position', `${modelPosition.x} ${modelPosition.y + 1.5} ${modelPosition.z}`);
+            videoPlane.setAttribute('visible', true);
+            document.querySelector('#windmill-video').play();
         });
+
+        document.querySelector('a-scene').setAttribute('ar-hit-test', '');
     </script>
 </body>
 </html>
