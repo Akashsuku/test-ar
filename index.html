@@ -4,9 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Windmill</title>
+    <!-- Importing A-Frame library for creating VR/AR experiences -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <!-- Importing AR.js library for adding AR capabilities to A-Frame -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
+        /* Styling for AR buttons */
         .ar-button {
             position: fixed;
             right: 10px;
@@ -17,6 +20,7 @@
             border-radius: 5px;
             width: 100px;
         }
+        /* Specific positions for each AR button */
         #place-button { top: 10px; }
         #move-left { top: 60px; display: none; }
         #move-right { top: 110px; display: none; }
@@ -26,6 +30,7 @@
         #scale-down { top: 310px; display: none; }
         #rotate-left { top: 360px; display: none; }
         #rotate-right { top: 410px; display: none; }
+        /* Styling for the marker */
         #marker {
             position: fixed;
             top: 50%;
@@ -35,6 +40,7 @@
             height: 40px;
             pointer-events: none;
         }
+        /* Crosshair styling for the marker */
         #marker::before, #marker::after {
             content: '';
             position: absolute;
@@ -57,19 +63,26 @@
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
+    <!-- A-Frame scene setup with AR.js -->
     <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false;' vr-mode-ui="enabled: false">
+        <!-- Preloading assets: windmill model and video -->
         <a-assets>
             <a-asset-item id="windmill" src="windmill.glb"></a-asset-item>
             <video id="windmill-video" src="video.mp4" preload="auto"></video>
         </a-assets>
 
-        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.128 0.128 0.128" position="0 0 -1.5" animation-mixer="loop: repeat"></a-entity>
-        <a-entity id="video-plane" geometry="primitive: plane; width: 0.6; height: 0.3375" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]" position="0 -0.3 -1"></a-entity>
+        <!-- Windmill model entity with initial scale and position -->
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.256 0.256 0.256" position="0 0 -3" animation-mixer="loop: repeat"></a-entity>
+        <!-- Video plane entity to display video -->
+        <a-entity id="video-plane" geometry="primitive: plane; width: 1; height: 0.5625" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]" position="0 -0.3 -1"></a-entity>
 
+        <!-- Camera entity -->
         <a-entity camera></a-entity>
     </a-scene>
 
+    <!-- Marker for visual alignment -->
     <div id="marker"></div>
+    <!-- AR control buttons -->
     <button id="place-button" class="ar-button">Place Windmill</button>
     <button id="move-left" class="ar-button">Left</button>
     <button id="move-right" class="ar-button">Right</button>
@@ -81,19 +94,23 @@
     <button id="rotate-right" class="ar-button">Rotate Right</button>
 
     <script>
+        // References to windmill model and video plane entities
         const windmillModel = document.getElementById('windmill-model');
         const videoPlane = document.getElementById('video-plane');
         const placeButton = document.getElementById('place-button');
-        let isPlaced = false;
-        let videoPlaying = false;
+        let isPlaced = false; // Flag to check if the windmill is placed
+        let videoPlaying = false; // Flag to check if the video is playing
 
+        // Event listener for the place button
         placeButton.addEventListener('click', function() {
             if (!isPlaced) {
                 const camera = document.querySelector('[camera]');
                 const position = camera.getAttribute('position');
-                windmillModel.setAttribute('position', `${position.x} ${position.y-3} ${position.z - 1.5}`);
-                windmillModel.setAttribute('visible', true);
+                // Set the windmill position relative to the camera
+                windmillModel.setAttribute('position', `${position.x} 0 ${position.z - 1.5}`);
+                windmillModel.setAttribute('visible', true); // Make the windmill visible
                 isPlaced = true;
+                // Hide the place button and show other control buttons
                 placeButton.style.display = 'none';
                 document.getElementById('move-left').style.display = 'block';
                 document.getElementById('move-right').style.display = 'block';
@@ -106,46 +123,55 @@
             }
         });
 
+        // Event listener for moving the windmill to the left
         document.getElementById('move-left').addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x - 0.1} ${position.y} ${position.z}`);
         });
 
+        // Event listener for moving the windmill to the right
         document.getElementById('move-right').addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x + 0.1} ${position.y} ${position.z}`);
         });
 
+        // Event listener for moving the windmill forward
         document.getElementById('move-forward').addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z - 0.1}`);
         });
 
+        // Event listener for moving the windmill backward
         document.getElementById('move-backward').addEventListener('click', () => {
             const position = windmillModel.getAttribute('position');
             windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z + 0.1}`);
         });
 
+        // Event listener for scaling up the windmill
         document.getElementById('scale-up').addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 1.2} ${scale.y * 1.2} ${scale.z * 1.2}`);
         });
 
+        // Event listener for scaling down the windmill
         document.getElementById('scale-down').addEventListener('click', () => {
             const scale = windmillModel.getAttribute('scale');
             windmillModel.setAttribute('scale', `${scale.x * 0.8} ${scale.y * 0.8} ${scale.z * 0.8}`);
         });
 
+        // Event listener for rotating the windmill to the left
         document.getElementById('rotate-left').addEventListener('click', () => {
             const rotation = windmillModel.getAttribute('rotation') || {x: 0, y: 0, z: 0};
             windmillModel.setAttribute('rotation', {x: rotation.x, y: rotation.y - 10, z: rotation.z});
         });
 
+        // Event listener for rotating the windmill to the right
         document.getElementById('rotate-right').addEventListener('click', () => {
             const rotation = windmillModel.getAttribute('rotation') || {x: 0, y: 0, z: 0};
             windmillModel.setAttribute('rotation', {x: rotation.x, y: rotation.y + 10, z: rotation.z});
         });
 
+        // Function to check if the camera is pointing at the windmill
         function checkMarkerIntersection() {
             if (!isPlaced) return;
 
@@ -153,6 +179,7 @@
             const windmillPosition = windmillModel.getAttribute('position');
             const cameraPosition = camera.getAttribute('position');
 
+            // Calculate direction from the camera to the windmill
             const direction = {
                 x: windmillPosition.x - cameraPosition.x,
                 y: windmillPosition.y - cameraPosition.y,
@@ -196,12 +223,14 @@
             }
         }
 
+        // Registering the custom component for checking the marker intersection on each frame
         AFRAME.registerComponent('check-marker', {
             tick: function() {
                 checkMarkerIntersection();
             }
         });
 
+        // Adding the custom component to the scene
         document.querySelector('a-scene').setAttribute('check-marker', '');
     </script>
 </body>
