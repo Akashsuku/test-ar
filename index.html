@@ -62,7 +62,7 @@
         </a-assets>
 
         <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.5 0.5 0.5"></a-entity>
-        <a-entity id="video-plane" geometry="primitive: plane; width: 4; height: 2.25" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]"></a-entity>
+        <a-entity id="video-plane" geometry="primitive: plane; width: 0.4; height: 0.225" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]"></a-entity>
 
         <a-entity camera></a-entity>
     </a-scene>
@@ -154,7 +154,8 @@
 
             const dotProduct = direction.x * forwardX + direction.y * forwardY + direction.z * forwardZ;
 
-            if (dotProduct > 0.99) {
+            // Adjusted threshold to make it easier to trigger the video
+            if (dotProduct > 0.7) {
                 videoPlane.setAttribute('visible', true);
                 const videoEl = document.querySelector('#windmill-video');
                 videoEl.play();
