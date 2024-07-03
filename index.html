@@ -63,8 +63,8 @@
             <video id="windmill-video" src="video.mp4" preload="auto"></video>
         </a-assets>
 
-        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.25 0.25 0.25" animation-mixer></a-entity>
-        <a-entity id="video-plane" geometry="primitive: plane; width: 0.6; height: 0.3375" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]"></a-entity>
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.25 0.25 0.25" animation-mixer="loop: repeat"></a-entity>
+        <a-entity id="video-plane" geometry="primitive: plane; width: 0.6; height: 0.3375" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]" position="0 -0.3 -1"></a-entity>
 
         <a-entity camera></a-entity>
     </a-scene>
@@ -179,7 +179,7 @@
                 const cameraEl = document.querySelector('[camera]');
                 const cameraPosition = cameraEl.getAttribute('position');
                 const cameraRotation = cameraEl.getAttribute('rotation');
-                videoPlane.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y} ${cameraPosition.z - 2}`);
+                videoPlane.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y - 0.2} ${cameraPosition.z - 2}`);
                 videoPlane.setAttribute('rotation', `${cameraRotation.x} ${cameraRotation.y} ${cameraRotation.z}`);
             } else {
                 videoPlane.setAttribute('visible', false);
