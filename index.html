@@ -62,7 +62,7 @@
         </a-assets>
 
         <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.5 0.5 0.5"></a-entity>
-        <a-entity id="video-plane" geometry="primitive: plane; width: 1.6; height: 0.9" material="shader: flat; src: #windmill-video" visible="false"></a-entity>
+        <a-entity id="video-plane" geometry="primitive: plane; width: 4; height: 2.25" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]"></a-entity>
 
         <a-entity camera></a-entity>
     </a-scene>
@@ -129,7 +129,6 @@
             windmillModel.setAttribute('scale', `${scale.x * 0.8} ${scale.y * 0.8} ${scale.z * 0.8}`);
         });
 
-        // Function to check if marker is pointing at the windmill
         function checkMarkerIntersection() {
             if (!isPlaced) return;
 
@@ -137,39 +136,40 @@
             const windmillPosition = windmillModel.getAttribute('position');
             const cameraPosition = camera.getAttribute('position');
 
-            // Calculate direction vector from camera to windmill
             const direction = {
                 x: windmillPosition.x - cameraPosition.x,
                 y: windmillPosition.y - cameraPosition.y,
                 z: windmillPosition.z - cameraPosition.z
             };
 
-            // Normalize the direction vector
             const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
             direction.x /= length;
             direction.y /= length;
             direction.z /= length;
 
-            // Get the camera's forward direction
             const rotation = camera.getAttribute('rotation');
             const forwardX = -Math.sin(rotation.y * Math.PI / 180);
             const forwardY = Math.sin(rotation.x * Math.PI / 180);
             const forwardZ = -Math.cos(rotation.y * Math.PI / 180) * Math.cos(rotation.x * Math.PI / 180);
 
-            // Calculate the dot product
             const dotProduct = direction.x * forwardX + direction.y * forwardY + direction.z * forwardZ;
 
-            // If the dot product is close to 1, the marker is pointing at the windmill
             if (dotProduct > 0.99) {
                 videoPlane.setAttribute('visible', true);
-                document.querySelector('#windmill-video').play();
+                const videoEl = document.querySelector('#windmill-video');
+                videoEl.play();
+                // Position the video plane in front of the camera
+                const cameraEl = document.querySelector('[camera]');
+                const cameraPosition = cameraEl.getAttribute('position');
+                const cameraRotation = cameraEl.getAttribute('rotation');
+                videoPlane.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y} ${cameraPosition.z - 2}`);
+                videoPlane.setAttribute('rotation', `${cameraRotation.x} ${cameraRotation.y} ${cameraRotation.z}`);
             } else {
                 videoPlane.setAttribute('visible', false);
                 document.querySelector('#windmill-video').pause();
             }
         }
 
-        // Run the check every frame
         AFRAME.registerComponent('check-marker', {
             tick: function() {
                 checkMarkerIntersection();
