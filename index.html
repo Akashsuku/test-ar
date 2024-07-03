@@ -106,7 +106,7 @@
             if (!isPlaced) {
                 const camera = document.querySelector('[camera]');
                 const position = camera.getAttribute('position');
-                windmillModel.setAttribute('position', `${position.x} ${position.y-3} ${position.z - 1.5}`);
+                windmillModel.setAttribute('position', `${position.x} 0 ${position.z - 1.5}`);
                 windmillModel.setAttribute('visible', true);
                 isPlaced = true;
                 // Hide the place button and show other control buttons
