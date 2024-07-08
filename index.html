@@ -1,17 +1,49 @@
-
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js"></script>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  </head>
-  <body>
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane color="blue" opaciy="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      </a-entity>
+<head>
+    <title>WebAR Image Tracking</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.7/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+    <a-scene embedded arjs>
+        <!-- Marker -->
+        <a-marker type="pattern" url="pattern-logo.patt">
+            <!-- 3D Model -->
+            <a-entity id="model" gltf-model="url(windmill.glb)" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
+        </a-marker>
+        <!-- Camera and Cursor -->
+        <a-entity camera>
+            <a-entity 
+                cursor="fuse: true; fuseTimeout: 500"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                material="color: black; shader: flat">
+            </a-entity>
+        </a-entity>
+        <!-- Video -->
+        <a-video id="video" src="video.mp4" position="0 1 -2" width="4" height="2.25" visible="false"></a-video>
     </a-scene>
-  </body>
+
+    <script>
+        AFRAME.registerComponent('model-listener', {
+            init: function () {
+                const model = document.querySelector('#model');
+                const video = document.querySelector('#video');
+
+                model.addEventListener('mouseenter', function () {
+                    video.setAttribute('visible', 'true');
+                    video.components.material.material.map.image.play();
+                });
+
+                model.addEventListener('mouseleave', function () {
+                    video.setAttribute('visible', 'false');
+                    video.components.material.material.map.image.pause();
+                });
+            }
+        });
+
+        document.querySelector('a-marker').setAttribute('model-listener', '');
+    </script>
+</body>
 </html>
