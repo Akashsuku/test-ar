@@ -19,7 +19,13 @@
             border: none;
             border-radius: 5px;
             width: 100px;
+            transition: opacity 0.3s ease; /* Smooth opacity transition */
         }
+
+        .ar-button:hover {
+            opacity: 0.8; /* Highlight on hover */
+        }
+
         /* Specific positions for each AR button */
         #place-button { top: 10px; }
         #move-left { top: 60px; display: none; }
@@ -30,31 +36,284 @@
         #scale-down { top: 310px; display: none; }
         #rotate-left { top: 360px; display: none; }
         #rotate-right { top: 410px; display: none; }
+
         /* Styling for the marker */
         #marker {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
+            width: 20px; /* Adjusted size for marker */
+            height: 20px; /* Adjusted size for marker */
             pointer-events: none;
         }
+
         /* Crosshair styling for the marker */
         #marker::before, #marker::after {
             content: '';
             position: absolute;
             background-color: red;
         }
+
+        /* Adjusted crosshair dimensions */
         #marker::before {
             width: 100%;
-            height: 2px;
+            height: 1px; /* Adjusted thickness */
             top: 50%;
             left: 0;
             transform: translateY(-50%);
         }
+
         #marker::after {
-            width: 2px;
+            width: 1px; /* Adjusted thickness */
+            height: 100%;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <!-- A-Frame scene setup with AR.js -->
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false;' vr-mode-ui="enabled: false">
+        <!-- Preloading assets: windmill model and video -->
+        <a-assets>
+            <a-asset-item id="windmill" src="windmill.glb"></a-asset-item>
+            <video id="windmill-video" src="video.mp4" preload="auto"></video>
+        </a-assets>
+
+        <!-- Windmill model entity with initial scale and position -->
+        <a-entity id="windmill-model" gltf-model="#windmill" visible="false" scale="0.256 0.256 0.256" position="0 0 -2.5" animation-mixer="loop: repeat"></a-entity>
+        <!-- Video plane entity to display video -->
+        <a-entity id="video-plane" geometry="primitive: plane; width: 0.6; height: 0.3375" material="shader: flat; src: #windmill-video" visible="false" look-at="[camera]" position="0 -0.3 -1"></a-entity>
+
+        <!-- Camera entity -->
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- Marker for visual alignment -->
+    <div id="marker"></div>
+    <!-- AR control buttons -->
+    <button id="place-button" class="ar-button">Place Windmill</button>
+    <button id="move-left" class="ar-button">Left</button>
+    <button id="move-right" class="ar-button">Right</button>
+    <button id="move-forward" class="ar-button">Forward</button>
+    <button id="move-backward" class="ar-button">Backward</button>
+    <button id="scale-up" class="ar-button">Scale Up</button>
+    <button id="scale-down" class="ar-button">Scale Down</button>
+    <button id="rotate-left" class="ar-button">Rotate Left</button>
+    <button id="rotate-right" class="ar-button">Rotate Right</button>
+
+    <script>
+        // References to windmill model and video plane entities
+        const windmillModel = document.getElementById('windmill-model');
+        const videoPlane = document.getElementById('video-plane');
+        const placeButton = document.getElementById('place-button');
+        let isPlaced = false; // Flag to check if the windmill is placed
+        let videoPlaying = false; // Flag to check if the video is playing
+
+        // Event listener for the place button
+        placeButton.addEventListener('click', function() {
+            if (!isPlaced) {
+                const camera = document.querySelector('[camera]');
+                const position = camera.getAttribute('position');
+                // Set the windmill position relative to the camera
+                windmillModel.setAttribute('position', `${position.x} 0 ${position.z - 2.5}`);
+                windmillModel.setAttribute('visible', true); // Make the windmill visible
+                isPlaced = true;
+                // Hide the place button and show other control buttons
+                placeButton.style.display = 'none';
+                document.getElementById('move-left').style.display = 'block';
+                document.getElementById('move-right').style.display = 'block';
+                document.getElementById('move-forward').style.display = 'block';
+                document.getElementById('move-backward').style.display = 'block';
+                document.getElementById('scale-up').style.display = 'block';
+                document.getElementById('scale-down').style.display = 'block';
+                document.getElementById('rotate-left').style.display = 'block';
+                document.getElementById('rotate-right').style.display = 'block';
+            }
+        });
+
+        // Event listener for moving the windmill to the left
+        document.getElementById('move-left').addEventListener('click', () => {
+            const position = windmillModel.getAttribute('position');
+            windmillModel.setAttribute('position', `${position.x - 0.1} ${position.y} ${position.z}`);
+        });
+
+        // Event listener for moving the windmill to the right
+        document.getElementById('move-right').addEventListener('click', () => {
+            const position = windmillModel.getAttribute('position');
+            windmillModel.setAttribute('position', `${position.x + 0.1} ${position.y} ${position.z}`);
+        });
+
+        // Event listener for moving the windmill forward
+        document.getElementById('move-forward').addEventListener('click', () => {
+            const position = windmillModel.getAttribute('position');
+            windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z - 0.1}`);
+        });
+
+        // Event listener for moving the windmill backward
+        document.getElementById('move-backward').addEventListener('click', () => {
+            const position = windmillModel.getAttribute('position');
+            windmillModel.setAttribute('position', `${position.x} ${position.y} ${position.z + 0.1}`);
+        });
+
+        // Event listener for scaling up the windmill
+        document.getElementById('scale-up').addEventListener('click', () => {
+            const scale = windmillModel.getAttribute('scale');
+            windmillModel.setAttribute('scale', `${scale.x * 1.2} ${scale.y * 1.2} ${scale.z * 1.2}`);
+        });
+
+        // Event listener for scaling down the windmill
+        document.getElementById('scale-down').addEventListener('click', () => {
+            const scale = windmillModel.getAttribute('scale');
+            windmillModel.setAttribute('scale', `${scale.x * 0.8} ${scale.y * 0.8} ${scale.z * 0.8}`);
+        });
+
+        // Event listener for rotating the windmill to the left
+        document.getElementById('rotate-left').addEventListener('click', () => {
+            const rotation = windmillModel.getAttribute('rotation') || {x: 0, y: 0, z: 0};
+            windmillModel.setAttribute('rotation', {x: rotation.x, y: rotation.y - 10, z: rotation.z});
+        });
+
+        // Event listener for rotating the windmill to the right
+        document.getElementById('rotate-right').addEventListener('click', () => {
+            const rotation = windmillModel.getAttribute('rotation') || {x: 0, y: 0, z: 0};
+            windmillModel.setAttribute('rotation', {x: rotation.x, y: rotation.y + 10, z: rotation.z});
+        });
+
+        // Function to check if the camera is pointing at the windmill
+        function checkMarkerIntersection() {
+            if (!isPlaced) return;
+
+            const camera = document.querySelector('[camera]');
+            const windmillPosition = windmillModel.getAttribute('position');
+            const cameraPosition = camera.getAttribute('position');
+
+            // Calculate direction from the camera to the windmill
+            const direction = {
+                x: windmillPosition.x - cameraPosition.x,
+                y: windmillPosition.y - cameraPosition.y,
+                z: windmillPosition.z - cameraPosition.z
+            };
+
+            const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+            direction.x /= length;
+            direction.y /= length;
+            direction.z /= length;
+
+            const rotation = camera.getAttribute('rotation');
+            const forwardX = -Math.sin(rotation.y * Math.PI / 180);
+            const forwardY = Math.sin(rotation.x * Math.PI / 180);
+            const forwardZ = -Math.cos(rotation.y * Math.PI / 180) * Math.cos(rotation.x * Math.PI / 180);
+
+            const dotProduct = direction.x * forwardX + direction.y * forwardY + direction.z * forwardZ;
+
+            // Adjusted threshold to make the activation radius smaller
+            if (dotProduct > 0.9) {
+                if (!videoPlaying) {
+                    videoPlane.setAttribute('visible', true);
+                    const videoEl = document.querySelector('#windmill-video');
+                    videoEl.play();
+                    // Position the video plane in front of the camera
+                    const cameraEl = document.querySelector('[camera]');
+                    const cameraPosition = cameraEl.getAttribute('position');
+                    const cameraRotation = cameraEl.getAttribute('rotation');
+                    videoPlane.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y - 0.2} ${cameraPosition.z - 2}`);
+                    videoPlane.setAttribute('rotation', `${cameraRotation.x} ${cameraRotation.y} ${cameraRotation.z}`);
+                    videoPlaying = true;
+                }
+            } else {
+                if (videoPlaying) {
+                    videoPlane.setAttribute('visible', false);
+                    const videoEl = document.querySelector('#windmill-video');
+                    videoEl.pause();
+                    videoEl.currentTime = 0; // Restart the video when it reappears
+                    videoPlaying = false;
+                }
+            }
+        }
+
+        // Registering the custom component for checking the marker intersection on each frame
+        AFRAME.registerComponent('check-marker', {
+            tick: function() {
+                checkMarkerIntersection();
+            }
+        });
+
+        // Adding the custom component to the scene
+        document.querySelector('a-scene').setAttribute('check-marker', '');
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Windmill</title>
+    <!-- Importing A-Frame library for creating VR/AR experiences -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <!-- Importing AR.js library for adding AR capabilities to A-Frame -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+        /* Styling for AR buttons */
+        .ar-button {
+            position: fixed;
+            right: 10px;
+            padding: 10px;
+            z-index: 1000;
+            background-color: white;
+            border: none;
+            border-radius: 5px;
+            width: 100px;
+            transition: opacity 0.3s ease; /* Smooth opacity transition */
+        }
+
+        .ar-button:hover {
+            opacity: 0.8; /* Highlight on hover */
+        }
+
+        /* Specific positions for each AR button */
+        #place-button { top: 10px; }
+        #move-left { top: 60px; display: none; }
+        #move-right { top: 110px; display: none; }
+        #move-forward { top: 160px; display: none; }
+        #move-backward { top: 210px; display: none; }
+        #scale-up { top: 260px; display: none; }
+        #scale-down { top: 310px; display: none; }
+        #rotate-left { top: 360px; display: none; }
+        #rotate-right { top: 410px; display: none; }
+
+        /* Styling for the marker */
+        #marker {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px; /* Adjusted size for marker */
+            height: 20px; /* Adjusted size for marker */
+            pointer-events: none;
+        }
+
+        /* Crosshair styling for the marker */
+        #marker::before, #marker::after {
+            content: '';
+            position: absolute;
+            background-color: red;
+        }
+
+        /* Adjusted crosshair dimensions */
+        #marker::before {
+            width: 100%;
+            height: 1px; /* Adjusted thickness */
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        #marker::after {
+            width: 1px; /* Adjusted thickness */
             height: 100%;
             top: 0;
             left: 50%;
